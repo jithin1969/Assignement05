@@ -1,9 +1,9 @@
 /*********************************************************************************
- *  WEB322 – Assignment 04
+ *  WEB322 – Assignment 05
  *  I declare that this assignment is my own work in accordance with Seneca  Academic Policy.  No part *  of this assignment has been copied manually or electronically from any other source
  *  (including 3rd party web sites) or distributed to other students.
  *
- *  Name:JithinBiju Student ID:153532213 Date: 11-NOV-2022
+ *  Name:JithinBiju Student ID:153532213 Date: 21-NOV-2022
  *
  *  Online (Cyclic) Link: 
  *
@@ -40,7 +40,14 @@
             } else {
                 return options.fn(this);
             }
-        }           
+        },
+      formatDate: function(dateObj){
+          let year = dateObj.getFullYear();
+          let month = (dateObj.getMonth() + 1).toString();
+          let day = dateObj.getDate().toString();
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2,'0')}`;
+      }
+                   
     } 
 }));
 
@@ -71,17 +78,18 @@ app.set('view engine', '.hbs');
    });
  }
  app.use(express.static("public"));
+ app.use(express.urlencoded({extended: true}));
  
  //setting up a defualt route for local host
  
  //home
 app.get('/', (req, res) => {
-  res.render(path.join(__dirname + "/views/home.hbs"));
+  res.render("home");
 });
 
 //otherwise /home would return an error
 app.get('/home', (req, res) => {
-  res.render(path.join(__dirname + "/views/home.hbs"));
+  res.render("home");
 });
 
 //route to products
@@ -98,35 +106,58 @@ app.get('/home', (req, res) => {
 });
  
 //route to demos
- app.get("/demos", (req, res) => {
+app.get("/demos", (req, res) => {
   if (req.query.category) {
-      data.getProductsByCategory(req.query.category).then((data) => {
-        res.render("demos", {demos: data});
-      }).catch((err) => {
-        res.render("demos", {message: "no results"});
+    data.getProductsByCategory(req.query.category)
+      .then((data) => {
+        if (data.length == 0) {
+          res.render("demos", { message: "no results" });
+          return;
+        }
+        res.render("demos", { products: data });
       })
-  }
-  else if (req.query.minDateStr) {
-      data.getProductsByMinDate(req.query.minDateStr).then((data) => {
-        res.render("demos", {demos: data});
-      }).catch((err) => {
-        res.render("demos", {message: "no results"});;
+      .catch((err) => {
+        res.render("demos", { message: "no results" });
+      });
+  } else if (req.query.minDate) {
+    data.getProductByMinDate(req.query.minDate)
+      .then((data) => {
+        if (data.length == 0) {
+          res.render("demos", { message: "no results" });
+          return;
+        }
+        res.render("demos", { products: data });
       })
-  }
-  
-  else {
-      data.getAllProducts().then((data) => {
-        res.render("demos", {demos: data});
-      }).catch((err) => {
-        res.render("demos", {message: "no results"});
+      .catch((err) => {
+        res.render("demos", { message: "no results" });
+      });
+  } else {
+    data.getAllProducts()
+      .then((data) => {
+        if (data.length == 0) {
+          res.render("demos", { message: "no results" });
+          return;
+        }
+        console.log("this is demnos rendering");
+        res.render("demos", { products: data });
       })
+      .catch((err) => res.render("demos", { message: "no results" }));
   }
+});
+
+app.get("/demos/delete/:id", (req, res) => {
+  data.deleteProductById(req.params.id)
+    .then(() => {
+      res.redirect("/demos");
+    })
+    .catch((err) => {
+      res.status(500).send("Unable to Remove Post / Post Not Found");
+    });
 });
 
 //route to categories
  app.get("/categories", function (req, res) {
-   data
-     .getCategories()
+   data.getCategories()
      .then(function (data) {
       res.render("categories", {categories: data});
      })
@@ -144,9 +175,18 @@ app.get('/home', (req, res) => {
   })
  });
 
- app.get('/products/add', (req, res) => {
-  res.render(path.join(__dirname + "/views/addproducts.hbs"));
+ app.get("/products/add", (req, res) => {
+  data.getCategories()
+  .then((data) => {
+    res.render("addProduct", { categories: data });
+  })
+  .catch((err) => {
+    
+    res.render("addProduct", { categories: [] });
+  });
 });
+
+
 app.post('/upload', fileUpload.single('image'), function (req, res, next) {
     let streamUpload = (req) => {
         return new Promise((resolve, reject) => {
@@ -172,9 +212,43 @@ app.post('/upload', fileUpload.single('image'), function (req, res, next) {
     upload(req);
 });
 
+app.get("/categories/add", (req, res) => {
+  res.render("addCategory");
+});
+
+app.post("/categories/add", (req, res) => {
+  data.addCategory(req.body)
+    .then((category) => {
+      res.redirect("/categories");
+    })
+    .catch((err) => {
+      res.status(500).send(err.message);
+    });
+});
+
+app.get("/categories/delete/:id", (req, res) => {
+  data.deleteCategoryById(req.params.id)
+    .then(() => {
+      res.redirect("/categories");
+    })
+    .catch((err) => {
+      res.status(500).send("Unable to Remove Category / Category Not Found");
+    });
+});
+
+app.get("/demos/delete/:id", (req, res) => {
+  data.deleteProductById(req.params.id)
+    .then(() => {
+      res.redirect("/demos");
+    })
+    .catch((err) => {
+      res.status(500).send("Unable to Remove Post / Post Not Found");
+    });
+});
+
 //if no route found show Page Not Found
  app.use(function (req, res) {
-   res.status(404).sendFile(path.join(__dirname, "/views/error.html"));
+   res.status(404).send("<h2>404</h2><p>Page not found</p>");
  });
  
  app.listen(HTTP_PORT, onHttpStart)

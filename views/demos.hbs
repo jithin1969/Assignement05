@@ -1,27 +1,27 @@
 <div class="row">
     <div class="col-md-12">
-        <h2>Demos</h2>
+        <h2>Demos <a href="/products/add" class="btn btn-success pull-right">Add Product</a></h2>
         <hr />
         <div class="table-responsive">
             <table class="table">
                 <thead>
                     <tr>
-                        <th>ID</th>
+                       <th>Product&nbsp;ID</th>
                         <th>Title</th>
-                        <th>Post Date</th>
+                        <th>Product&nbsp;Date</th>
                         <th>Category</th>
                         <th>Published</th>
-                        
                     </tr>
                 </thead>
                 <tbody>
                     {{#each products}}
                     <tr>
-                        <td>{{this.id}}</td>
-                        <td>{{this.title}}</td>
-                        <td>{{this.postDate}}</td>
-                        <td><a href="/demos?category={{this.category}}">{{this.category}}</a></td>
-                        <td>{{this.published}}</td>
+                        <td>{{id}}</td>
+                        <td>{{title}}</td>
+                        <td>{{postDate}}</td>
+                        <td><a href="/demos?category={{category}}">{{category}}</a></td>
+                        <td>{{published}}</td>
+                        <td><a href="/demos/delete/{{id}}" class="btn btn-danger">Remove</a></td>
                     </tr>
                     {{/each}}
                 </tbody>

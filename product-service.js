@@ -1,118 +1,206 @@
-var fs = require("fs");
+const Sequelize = require('sequelize');
+var sequelize = new Sequelize('fiftootu', 'fiftootu', '8x8pIxUoXrz6zChLogHvZ1FHKSyWSYU8', {
+    host: 'jelani.db.elephantsql.com',
+    dialect: 'postgres',
+    port: 5432,
+    dialectOptions: {
+        ssl: { rejectUnauthorized: false }
+    },
+    query: { raw: true }
+});
 
-var products = {};
-var categories = [];
+var Product = sequelize.define("Product", {
+  body: Sequelize.TEXT,
+  title: Sequelize.STRING,
+  postDate: Sequelize.DATE,
+  featureImage: Sequelize.STRING,
+  published: Sequelize.BOOLEAN,
+});
+
+var Category = sequelize.define("Category", {
+  category: Sequelize.STRING,
+});
+
+Product.belongsTo(Category, { foreignKey: "category" });
 
 module.exports.initialize = function () {
-  return new Promise(function (resolve, reject) {
-    try {
+  return sequelize.sync();
 
-      
-      fs.readFile("./data/products.json", function (err, data) {
-        if (err) throw err;
-        products = JSON.parse(data);
-      });
-      fs.readFile("./data/categories.json", function (err, data) {
-        if (err) throw err;
-        categories = JSON.parse(data);
-      });
-    } catch (ex) {
-      reject("unable to read file");
-    }
-    resolve("JSON file successfully read.");
-  });
 };
 
 module.exports.getAllProducts = function () {
-  var all_products = [];
-  return new Promise(function (resolve, reject) {
-    for (var i = 0; i < products.length; i++) {
-      all_products.push(products[i]);
-    }
-    if (all_products.length == 0) {
-      reject("no results returned");
-    }
-    resolve(all_products);
+  return new Promise((resolve, reject) => {
+    Product.findAll()
+      .then((data) => {
+        resolve(data);
+      })
+      .catch((err) => {
+        reject("no results returned");
+      });
   });
+
+};
+
+module.exports.getProductsByCategory = (category) => {
+  return new Promise((resolve, reject) => {
+    Product.findAll({
+      where: { category: category },
+    })
+      .then((data) => {
+        resolve(data);
+      })
+      .catch(() => {
+        reject("no results returned");
+      });
+  });
+};
+
+module.exports.getProductsByMinDate = (minDateStr) => {
+  const { gte } = Sequelize.Op;
+  return new Promise((resolve, reject) => {
+    Product
+      .findAll({
+        where: {
+          postDate: {
+            [gte]: new Date(minDateStr),
+          },
+        },
+      })
+      .then((data) => {
+        resolve(data);
+      })
+      .catch((err) => {
+        reject("no results returned");
+      });
+  });
+};
+
+module.exports.getProductById  = (id) => {
+  return new Promise((resolve, reject) => {
+    Product.findAll({
+        where: {
+          id: id,
+        },
+      })
+      .then((data) => {
+        resolve(data[0]);
+      })
+      .catch((err) => {
+        reject("no results returned");
+      });
+  });
+};
+
+module.exports.addProduct = function () {
+  return new Promise((resolve, reject) => {
+    productData.published = productData.published ? true : false;
+
+    for (var element in productData) {
+      if (productData[prop] == "") productData[element] = null;
+    }
+
+    productData.postDate = new Date();
+
+    Product.create(productData)
+      .then(() => {
+        resolve();
+      })
+      .catch((err) => {
+        reject("unable to create post");
+      });
+  });
+
 };
 
 
 module.exports.getPublishedProducts = function () {
-  var published_products = [];
+  return new Promise((resolve, reject) => {
+    Product.findAll({
+      where: { published: true },
+    })
+      .then((data) => {
+        resolve(data);
+      })
+      .catch((err) => {
+        reject("no results returned");
+      });
+  });
 
-  return new Promise(function (resolve, reject) {
-    for (var a = 0; a < products.length; a++) {
-      if (products[a].published == true) {
-        published_products.push(products[a]);
-      }
-    }
-    if (published_products.length == 0) {
-      reject("no results returned");
-    }
-    resolve(published_products);
+};
+
+module.exports.getPublishedProductsByCategory = function (category) {
+  return new Promise((resolve, reject) => {
+    Product.findAll({
+      where: { category: category, published: true },
+    })
+      .then((data) => {
+        resolve(data);
+      })
+      .catch((err) => {
+        reject("no results returned");
+      });
   });
 };
 
-module.exports.getCategories = function () {
-  var c_categories = [];
-  return new Promise(function (resolve, reject) {
-    if (products.length == 0) {
-      reject("no data returned");
-    } else {
-      for (var v = 0; v < categories.length; v++) {
-        c_categories.push(categories[v]);
-      }
-      if (c_categories.length == 0) {
-        reject("no data returned");
-      }
+module.exports.getCategories = () => {
+  return new Promise((resolve, reject) => {
+    Category.findAll()
+      .then((data) => {
+        resolve(data);
+      })
+      .catch((err) => {
+        reject("no results returned");
+      });
+  });
+};
+
+module.exports.addCategory = function (categoryData) {
+  return new Promise((resolve, reject) => {
+    for (var element in categoryData) {
+      if (categoryData[element] == "") categoryData[element] = null;
     }
-    resolve(c_categories);
+
+    Category.create(categoryData)
+      .then(() => {
+        resolve();
+      })
+      .catch((err) => {
+        reject("unable to create category");
+      });
+  });
+};
+
+module.exports.deleteCategoryById = function (id) {
+  return new Promise((resolve, reject) => {
+      Category.destroy({
+          where: {
+              id: id
+          }
+      }).then( data => {
+          resolve();
+      }).catch((err) => {
+          reject("unable to delete category");
+      });
+  });
+};
+
+module.exports.deleteProductById = function (id) {
+  return new Promise((resolve, reject) => {
+    Product.destroy({
+      where: {
+        id: id,
+      },
+    })
+      .then((data) => {
+        resolve();
+      })
+      .catch((err) => {
+        reject("unable to delete post");
+      });
   });
 };
 
 
-module.exports.addProduct = function () {
-  var productData = [];
-  productData.published ==undefined ? productData.published  = false : productData.published  = true;
-  productData.id = products.length + 1;
-  products.push(productData);
 
-  return new Promise((resolve,reject) => {
-      if (products.length == 0) {
-          reject ('no data returned');
-      }
-      else {
-          resolve(products);
-      }
-  })
-};
 
-module.exports.getProductsByCategory = (category) => {
-  return new Promise((resolve,reject) => {
-      var product_cat = product.filter(product => product.category == category);
-      if (product_cat.length == 0) {
-          reject('no results returned');
-      }
-      resolve(product_cat);
-  })
-};
 
-module.exports.getProductsByMinDate = (minDateStr) => {
-  return new Promise ((resolve,reject) => {
-      var product_minDateStr = product.filter(product => product.minDateStr == minDateStr);        
-      if (product_minDateStr.length == 0) {
-          reject ('no results returned');
-      }
-      resolve(product_minDateStr);
-  })
-};
-
-module.exports.getProductById  = (id) => {
-  return new Promise ((resolve,reject) => {
-      var product_id = product.filter(product => product.id == id);        
-      if (product_id.length == 0) {
-          reject ('no results returned');
-      }
-      resolve(product_id);
-  })
-};
