@@ -154,6 +154,7 @@ module.exports.getCategories = () => {
   });
 };
 
+//new
 module.exports.addCategory = function (categoryData) {
   return new Promise((resolve, reject) => {
     for (var element in categoryData) {
